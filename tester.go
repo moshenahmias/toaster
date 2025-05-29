@@ -17,6 +17,19 @@ type Tester interface {
 	Run(f any)
 }
 
+// Evaluator is an interface for evaluating a function with no parameters.
+type Evaluator interface {
+	// Evaluate runs the function with the provided parameters and returns the result.
+	Evaluate() any
+}
+
+// EvaluatorFunc is a function type that implements the Evaluator interface.
+type EvaluatorFunc func() any
+
+func (f EvaluatorFunc) Evaluate() any {
+	return f()
+}
+
 type tester struct {
 	cases [][]any
 }
@@ -36,11 +49,10 @@ func (t *tester) Skip(params ...any) Tester {
 }
 
 func (t *tester) Case(params ...any) Tester {
-	if len(params) == 0 {
-		return t
+	if len(params) > 0 {
+		t.cases = append(t.cases, params)
 	}
 
-	t.cases = append(t.cases, params)
 	return t
 }
 
@@ -64,6 +76,11 @@ func (t *tester) runCase(fn reflect.Value, testCase []any) {
 	in := make([]reflect.Value, len(testCase))
 
 	for i, param := range testCase {
+
+		if ev, ok := param.(Evaluator); ok {
+			param = ev.Evaluate()
+		}
+
 		in[i] = reflect.ValueOf(param)
 	}
 

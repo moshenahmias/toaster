@@ -91,3 +91,129 @@ func TestSkip(t *testing.T) {
 		t.Errorf("expected slice to contain only 2, got %v", s)
 	}
 }
+
+func TestSkip_Empty(t *testing.T) {
+	var called bool
+
+	toaster.Skip().Run(func() {
+		called = true
+	})
+
+	if called {
+		t.Error("expected function not to be called for empty skip")
+	}
+}
+
+func TestSkip_Chaining(t *testing.T) {
+	var results []int
+
+	toaster.Skip(1).Case(2).Skip(3).Case(4).Run(func(x int) {
+		results = append(results, x)
+	})
+
+	if len(results) != 2 || results[0] != 2 || results[1] != 4 {
+		t.Errorf("expected results to be [2, 4], got %v", results)
+	}
+}
+
+func TestSkip_CaseAfterSkip(t *testing.T) {
+	var results []int
+
+	toaster.Skip(1).Case(2).Skip(3).Case(4).Run(func(x int) {
+		results = append(results, x)
+	})
+
+	if len(results) != 2 || results[0] != 2 || results[1] != 4 {
+		t.Errorf("expected results to be [2, 4], got %v", results)
+	}
+}
+
+func TestSkip_CaseBeforeSkip(t *testing.T) {
+	var results []int
+
+	toaster.Case(1).Skip(2).Case(3).Run(func(x int) {
+		results = append(results, x)
+	})
+
+	if len(results) != 2 || results[0] != 1 || results[1] != 3 {
+		t.Errorf("expected results to be [1, 3], got %v", results)
+	}
+}
+
+func TestSkip_CaseBeforeAndAfterSkip(t *testing.T) {
+	var results []int
+
+	toaster.Case(1).Skip(2).Case(3).Run(func(x int) {
+		results = append(results, x)
+	})
+
+	if len(results) != 2 || results[0] != 1 || results[1] != 3 {
+		t.Errorf("expected results to be [1, 3], got %v", results)
+	}
+}
+
+func TestSkip_EmptyCase(t *testing.T) {
+	var called bool
+
+	toaster.Skip().Case().Run(func() {
+		called = true
+	})
+
+	if called {
+		t.Error("expected function not to be called for empty case after skip")
+	}
+}
+
+func TestSkip_EmptyCaseAfterSkip(t *testing.T) {
+	var called bool
+
+	toaster.Skip().Case().Run(func() {
+		called = true
+	})
+
+	if called {
+		t.Error("expected function not to be called for empty case after skip")
+	}
+}
+
+func TestEvaluator(t *testing.T) {
+	var called bool
+	var gotA int
+	var gotB string
+
+	toaster.Case(42, toaster.EvaluatorFunc(func() any {
+		return "hello"
+	})).Run(func(a int, b string) {
+		called = true
+		gotA = a
+		gotB = b
+	})
+
+	if !called {
+		t.Error("expected function to be called")
+	}
+	if gotA != 42 || gotB != "hello" {
+		t.Errorf("unexpected arguments: gotA=%v, gotB=%v", gotA, gotB)
+	}
+}
+
+func TestEvaluator2(t *testing.T) {
+	var called bool
+	var gotA int
+	var gotB string
+
+	toaster.Case(42, toaster.EvaluatorFunc(func() any {
+		return "hello"
+	})).Run(func(a int, b string) {
+		called = true
+		gotA = a
+		gotB = b
+	})
+
+	if !called {
+		t.Error("expected function to be called")
+	}
+	if gotA != 42 || gotB != "hello" {
+		t.Errorf("unexpected arguments: gotA=%v, gotB=%v", gotA, gotB)
+	}
+}
