@@ -24,7 +24,7 @@ func TestAddFunction(t *testing.T) {
 	toaster.
 		Case(1, 2, 3).
 		Case(3, 4, 7).
-		Run(func(a int, b int, expected int) {
+		Run(func(a, b, expected int) {
 			if result := Add(a, b); result != expected {
 				t.Errorf("expected %d + %d = %d, got %d", a, b, expected, result)
 			}
