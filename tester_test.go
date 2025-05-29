@@ -79,3 +79,15 @@ func TestCase_Empty(t *testing.T) {
 		t.Error("expected function not to be called for empty case")
 	}
 }
+
+func TestSkip(t *testing.T) {
+	var s []int
+
+	toaster.Skip(1).Case(2).Skip(3).Run(func(x int) {
+		s = append(s, x)
+	})
+
+	if len(s) != 1 || s[0] != 2 {
+		t.Errorf("expected slice to contain only 2, got %v", s)
+	}
+}

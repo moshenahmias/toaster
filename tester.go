@@ -10,6 +10,9 @@ type Tester interface {
 	// Case adds a test case with the provided parameters to the Tester.
 	Case(params ...any) Tester
 
+	// Skip is a no-op method that can be used to skip the test case.
+	Skip(params ...any) Tester
+
 	// Run executes the provided function with each set of parameters.
 	Run(f any)
 }
@@ -21,6 +24,15 @@ type tester struct {
 // Case creates a new Tester instance and adds the first test case with the provided parameters.
 func Case(params ...any) Tester {
 	return new(tester).Case(params...)
+}
+
+// Skip creates a new Tester instance that skips the test case with the provided parameters.
+func Skip(params ...any) Tester {
+	return new(tester)
+}
+
+func (t *tester) Skip(params ...any) Tester {
+	return t
 }
 
 func (t *tester) Case(params ...any) Tester {
