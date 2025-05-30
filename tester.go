@@ -14,8 +14,6 @@ type Tester interface {
 	Skip(params ...any) Tester
 
 	// Run executes the provided function with each set of parameters.
-	// The function must accept zero parameters and may return a boolean value.
-	// If the function returns false, the test execution stops.
 	Run(f any)
 }
 
