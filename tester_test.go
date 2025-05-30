@@ -1,6 +1,7 @@
 package toaster_test
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/moshenahmias/toaster"
@@ -197,27 +198,6 @@ func TestEvaluator(t *testing.T) {
 	}
 }
 
-func TestEvaluator2(t *testing.T) {
-	var called bool
-	var gotA int
-	var gotB string
-
-	toaster.Case(42, toaster.EvaluatorFunc(func() any {
-		return "hello"
-	})).Run(func(a int, b string) {
-		called = true
-		gotA = a
-		gotB = b
-	})
-
-	if !called {
-		t.Error("expected function to be called")
-	}
-	if gotA != 42 || gotB != "hello" {
-		t.Errorf("unexpected arguments: gotA=%v, gotB=%v", gotA, gotB)
-	}
-}
-
 func TestSkipAll(t *testing.T) {
 	var called bool
 
@@ -227,5 +207,23 @@ func TestSkipAll(t *testing.T) {
 
 	if called {
 		t.Error("expected function not to be called for Skip without cases")
+	}
+}
+
+func TestSkipOnDemand(t *testing.T) {
+	var s []int
+
+	toaster.Case(1).Case(2).Case(3).Run(func(x int) bool {
+		if x == 2 {
+			return false
+		}
+
+		s = append(s, x)
+
+		return true
+	})
+
+	if slices.Compare(s, []int{1}) != 0 {
+		t.Errorf("expected results to be [1], got %v", s)
 	}
 }

@@ -68,11 +68,13 @@ func (t *tester) Run(f any) {
 			panic(fmt.Sprintf("case %d: expected %d parameters, got %d", i, fn.Type().NumIn(), len(testCase)))
 		}
 
-		t.runCase(fn, testCase)
+		if !t.runCase(fn, testCase) {
+			return
+		}
 	}
 }
 
-func (t *tester) runCase(fn reflect.Value, testCase []any) {
+func (t *tester) runCase(fn reflect.Value, testCase []any) bool {
 	in := make([]reflect.Value, len(testCase))
 
 	for i, param := range testCase {
@@ -84,23 +86,11 @@ func (t *tester) runCase(fn reflect.Value, testCase []any) {
 		in[i] = reflect.ValueOf(param)
 	}
 
-	_ = fn.Call(in)
-}
+	out := fn.Call(in)
 
-type nullTester struct{}
+	if len(out) == 1 && out[0].Kind() == reflect.Bool {
+		return out[0].Bool()
+	}
 
-func (t *nullTester) Case(params ...any) Tester {
-	return t
-}
-
-func (t *nullTester) Skip(params ...any) Tester {
-	return t
-}
-
-func (*nullTester) Run(f any) {}
-
-// SkipAll returns a Tester that does nothing, effectively skipping all test cases.
-// This can be used when you want to skip all tests in a suite.
-func SkipAll(reason string) Tester {
-	return new(nullTester)
+	return true
 }
