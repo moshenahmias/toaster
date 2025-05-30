@@ -2,6 +2,7 @@ package toaster_test
 
 import (
 	"context"
+	"slices"
 	"testing"
 
 	"github.com/moshenahmias/toaster"
@@ -228,5 +229,20 @@ func TestBind(t *testing.T) {
 	}
 	if gotA != 42 || gotB != "hello" {
 		t.Errorf("unexpected arguments: gotA=%v, gotB=%v", gotA, gotB)
+	}
+}
+
+func TestGo(t *testing.T) {
+	var results [3]int
+
+	toaster.Case(0).Case(1).Case(2).Go(func(x int) {
+		results[x] = x
+	})
+
+	if len(results) != 3 {
+		t.Errorf("expected 3 calls, got %d", len(results))
+	}
+	if slices.Compare(results[:], []int{0, 1, 2}) != 0 {
+		t.Errorf("unexpected results: %v", results)
 	}
 }

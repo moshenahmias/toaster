@@ -3,6 +3,7 @@ package toaster
 import (
 	"fmt"
 	"reflect"
+	"sync"
 )
 
 // Tester is an interface for creating and running parameterized tests.
@@ -15,6 +16,9 @@ type Tester interface {
 
 	// Run executes the provided function with each set of arguments.
 	Run(f any)
+
+	// Go is similar to Run, but executes the function concurrently for each test case.
+	Go(f any)
 }
 
 // Evaluator is an interface for evaluating a function with no parameters.
@@ -62,7 +66,7 @@ func (t *tester) Case(args ...any) Tester {
 	return t
 }
 
-func (t *tester) Run(f any) {
+func (t *tester) preRun(f any) (reflect.Value, []reflect.Value) {
 	if f == nil {
 		panic("f must not be nil")
 	}
@@ -79,6 +83,12 @@ func (t *tester) Run(f any) {
 		bind[i] = reflect.ValueOf(param)
 	}
 
+	return fn, bind
+}
+
+func (t *tester) Run(f any) {
+	fn, bind := t.preRun(f)
+
 	for i, testCase := range t.cases {
 		if len(testCase)+len(bind) != fn.Type().NumIn() {
 			panic(fmt.Sprintf("case %d: expected %d arguments, got %d", i, fn.Type().NumIn(), len(testCase)+len(bind)))
@@ -86,6 +96,27 @@ func (t *tester) Run(f any) {
 
 		t.runCase(fn, bind, testCase)
 	}
+}
+
+func (t *tester) Go(f any) {
+	fn, bind := t.preRun(f)
+
+	var wg sync.WaitGroup
+
+	wg.Add(len(t.cases))
+
+	for i, testCase := range t.cases {
+		if len(testCase)+len(bind) != fn.Type().NumIn() {
+			panic(fmt.Sprintf("case %d: expected %d arguments, got %d", i, fn.Type().NumIn(), len(testCase)+len(bind)))
+		}
+
+		go func(testCase []any) {
+			defer wg.Done()
+			t.runCase(fn, bind, testCase)
+		}(testCase)
+	}
+
+	wg.Wait()
 }
 
 func (t *tester) runCase(fn reflect.Value, bind []reflect.Value, testCase []any) {
