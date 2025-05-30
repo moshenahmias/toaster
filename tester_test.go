@@ -1,6 +1,7 @@
 package toaster_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/moshenahmias/toaster"
@@ -206,5 +207,27 @@ func TestSkipAll(t *testing.T) {
 
 	if called {
 		t.Error("expected function not to be called for Skip without cases")
+	}
+}
+
+func TestBind(t *testing.T) {
+	var called bool
+	var gotA int
+	var gotB string
+
+	toaster.Bind(context.Background(), 42).Case("hello", 2).Run(func(ctx context.Context, a int, b string) {
+		if ctx.Err() == nil {
+			called = true
+			gotA = a
+			gotB = b
+		}
+
+	})
+
+	if !called {
+		t.Error("expected function to be called")
+	}
+	if gotA != 42 || gotB != "hello" {
+		t.Errorf("unexpected arguments: gotA=%v, gotB=%v", gotA, gotB)
 	}
 }

@@ -10,6 +10,10 @@ func (t *nullTester) Skip(params ...any) Tester {
 	return t
 }
 
+func (t *nullTester) Bind(params ...any) Tester {
+	return t
+}
+
 func (*nullTester) Run(f any) {}
 
 // SkipAll returns a Tester that does nothing, effectively skipping all test cases.

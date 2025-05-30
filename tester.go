@@ -7,19 +7,22 @@ import (
 
 // Tester is an interface for creating and running parameterized tests.
 type Tester interface {
-	// Case adds a test case with the provided parameters to the Tester.
-	Case(params ...any) Tester
+	// Case adds a test case with the provided arguments to the Tester.
+	Case(args ...any) Tester
 
 	// Skip is a no-op method that can be used to skip the test case.
-	Skip(params ...any) Tester
+	Skip(args ...any) Tester
 
-	// Run executes the provided function with each set of parameters.
+	// Bind binds the provided arguments to the Tester, which will be used in each test case.
+	Bind(args ...any) Tester
+
+	// Run executes the provided function with each set of arguments.
 	Run(f any)
 }
 
 // Evaluator is an interface for evaluating a function with no parameters.
 type Evaluator interface {
-	// Evaluate runs the function with the provided parameters and returns the result.
+	// Evaluate runs the function and returns the result.
 	Evaluate() any
 }
 
@@ -32,26 +35,38 @@ func (f EvaluatorFunc) Evaluate() any {
 
 type tester struct {
 	cases [][]any
+	bind  []any
 }
 
-// Case creates a new Tester instance and adds the first test case with the provided parameters.
-func Case(params ...any) Tester {
-	return new(tester).Case(params...)
+// Case creates a new Tester instance and adds the first test case with the provided arguments.
+func Case(args ...any) Tester {
+	return new(tester).Case(args...)
 }
 
-// Skip creates a new Tester instance that skips the test case with the provided parameters.
-func Skip(params ...any) Tester {
+// Skip creates a new Tester instance that skips the test case with the provided arguments.
+func Skip(args ...any) Tester {
 	return new(tester)
 }
 
-func (t *tester) Skip(params ...any) Tester {
+// Bind creates a new Tester instance and binds the provided arguments to it.
+func Bind(args ...any) Tester {
+	return new(tester).Bind(args...)
+}
+
+func (t *tester) Skip(args ...any) Tester {
 	return t
 }
 
-func (t *tester) Case(params ...any) Tester {
-	if len(params) > 0 {
-		t.cases = append(t.cases, params)
+func (t *tester) Case(args ...any) Tester {
+	if len(args) > 0 {
+		t.cases = append(t.cases, args)
 	}
+
+	return t
+}
+
+func (t *tester) Bind(args ...any) Tester {
+	t.bind = append(t.bind, args...)
 
 	return t
 }
@@ -67,17 +82,25 @@ func (t *tester) Run(f any) {
 		panic("f must be a function")
 	}
 
+	bind := make([]reflect.Value, len(t.bind))
+
+	for i, param := range t.bind {
+		bind[i] = reflect.ValueOf(param)
+	}
+
 	for i, testCase := range t.cases {
-		if len(testCase) != fn.Type().NumIn() {
-			panic(fmt.Sprintf("case %d: expected %d parameters, got %d", i, fn.Type().NumIn(), len(testCase)))
+		if len(testCase)+len(bind) != fn.Type().NumIn() {
+			panic(fmt.Sprintf("case %d: expected %d arguments, got %d", i, fn.Type().NumIn(), len(testCase)+len(bind)))
 		}
 
-		t.runCase(fn, testCase)
+		t.runCase(fn, bind, testCase)
 	}
 }
 
-func (t *tester) runCase(fn reflect.Value, testCase []any) {
-	in := make([]reflect.Value, len(testCase))
+func (t *tester) runCase(fn reflect.Value, bind []reflect.Value, testCase []any) {
+	in := make([]reflect.Value, len(testCase)+len(bind))
+
+	copy(in, bind)
 
 	for i, param := range testCase {
 
@@ -85,7 +108,7 @@ func (t *tester) runCase(fn reflect.Value, testCase []any) {
 			param = ev.Evaluate()
 		}
 
-		in[i] = reflect.ValueOf(param)
+		in[i+len(bind)] = reflect.ValueOf(param)
 	}
 
 	_ = fn.Call(in)
