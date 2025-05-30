@@ -14,6 +14,8 @@ type Tester interface {
 	Skip(params ...any) Tester
 
 	// Run executes the provided function with each set of parameters.
+	// The function must accept zero parameters and may return a boolean value.
+	// If the function returns false, the test execution stops.
 	Run(f any)
 }
 
@@ -57,6 +59,10 @@ func (t *tester) Case(params ...any) Tester {
 }
 
 func (t *tester) Run(f any) {
+	if f == nil {
+		panic("f must not be nil")
+	}
+
 	fn := reflect.ValueOf(f)
 
 	if fn.Kind() != reflect.Func {
@@ -68,13 +74,11 @@ func (t *tester) Run(f any) {
 			panic(fmt.Sprintf("case %d: expected %d parameters, got %d", i, fn.Type().NumIn(), len(testCase)))
 		}
 
-		if !t.runCase(fn, testCase) {
-			return
-		}
+		t.runCase(fn, testCase)
 	}
 }
 
-func (t *tester) runCase(fn reflect.Value, testCase []any) bool {
+func (t *tester) runCase(fn reflect.Value, testCase []any) {
 	in := make([]reflect.Value, len(testCase))
 
 	for i, param := range testCase {
@@ -86,11 +90,5 @@ func (t *tester) runCase(fn reflect.Value, testCase []any) bool {
 		in[i] = reflect.ValueOf(param)
 	}
 
-	out := fn.Call(in)
-
-	if len(out) == 1 && out[0].Kind() == reflect.Bool {
-		return out[0].Bool()
-	}
-
-	return true
+	_ = fn.Call(in)
 }
