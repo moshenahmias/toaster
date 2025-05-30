@@ -13,9 +13,6 @@ type Tester interface {
 	// Skip is a no-op method that can be used to skip the test case.
 	Skip(args ...any) Tester
 
-	// Bind binds the provided arguments to the Tester, which will be used in each test case.
-	Bind(args ...any) Tester
-
 	// Run executes the provided function with each set of arguments.
 	Run(f any)
 }
@@ -50,7 +47,7 @@ func Skip(args ...any) Tester {
 
 // Bind creates a new Tester instance and binds the provided arguments to it.
 func Bind(args ...any) Tester {
-	return new(tester).Bind(args...)
+	return &tester{bind: args}
 }
 
 func (t *tester) Skip(args ...any) Tester {
@@ -61,12 +58,6 @@ func (t *tester) Case(args ...any) Tester {
 	if len(args) > 0 {
 		t.cases = append(t.cases, args)
 	}
-
-	return t
-}
-
-func (t *tester) Bind(args ...any) Tester {
-	t.bind = append(t.bind, args...)
 
 	return t
 }

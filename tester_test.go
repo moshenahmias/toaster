@@ -215,13 +215,12 @@ func TestBind(t *testing.T) {
 	var gotA int
 	var gotB string
 
-	toaster.Bind(context.Background(), 42).Case("hello", 2).Run(func(ctx context.Context, a int, b string) {
+	toaster.Bind(context.Background(), 42).Case("hello").Run(func(ctx context.Context, a int, b string) {
 		if ctx.Err() == nil {
 			called = true
 			gotA = a
 			gotB = b
 		}
-
 	})
 
 	if !called {
