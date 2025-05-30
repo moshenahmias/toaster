@@ -217,3 +217,15 @@ func TestEvaluator2(t *testing.T) {
 		t.Errorf("unexpected arguments: gotA=%v, gotB=%v", gotA, gotB)
 	}
 }
+
+func TestSkipAll(t *testing.T) {
+	var called bool
+
+	toaster.SkipAll("because we can").Case(1, 2, 3).Case(4, 5, 6).Run(func() {
+		called = true
+	})
+
+	if called {
+		t.Error("expected function not to be called for Skip without cases")
+	}
+}
